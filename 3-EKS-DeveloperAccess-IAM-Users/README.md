@@ -11,12 +11,12 @@ When you create an Amazon EKS cluster, the AWS Identity and Access Management (I
 
 
 To add an IAM user or role to an Amazon EKS cluster
-1.Determine which credentials kubectl is using to access your cluster. On your computer, you can see which credentials kubectl uses with the following command. Replace ~/.kube/config with the path to your kubeconfig file if you don't use the default path.
+
+1. Determine which credentials kubectl is using to access your cluster. On your computer, you can see which credentials kubectl uses with the following command. Replace ~/.kube/config with the path to your kubeconfig file if you don't use the default path.
 
 
-2.Make sure that you have existing Kubernetes roles and rolebindings or clusterroles and clusterrolebindings that you can map IAM users or roles to. For more information about these resources, see Using RBAC Authorization in the Kubernetes documentation.
-
+2. Make sure that you have existing Kubernetes roles and rolebindings or clusterroles and clusterrolebindings that you can map IAM users or roles to. For more information about these resources, see Using RBAC Authorization in the Kubernetes documentation.
 View your existing Kubernetes roles or clusterroles. Roles are scoped to a namespace, but clusterroles are scoped to the cluster.
 
 
-3.Edit the aws-auth ConfigMap. You can use a tool such as eksctl to update the ConfigMap or you can update it manually by editing it.
+3. Edit the aws-auth ConfigMap. You can use a tool such as eksctl to update the ConfigMap or you can update it manually by editing it.
