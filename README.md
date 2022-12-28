@@ -929,7 +929,7 @@ cluster_version = "1.24"
 cluster_endpoint_private_access = false
 cluster_endpoint_public_access = true
 cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]
-eks_oidc_root_ca_thumbprint = "9e99a48a9960b14926bb7f3b02e22da2b0ab7280"
+eks_oidc_root_ca_thumbprint = ""
 
 
 
@@ -962,11 +962,11 @@ https://marcincuber.medium.com/amazon-eks-with-oidc-provider-iam-roles-for-kuber
 # Input Variables - AWS IAM OIDC Connect Provider
 
 
-# EKS OIDC ROOT CA Thumbprint - valid until 2037
+# EKS OIDC ROOT CA Thumbprint 
 variable "eks_oidc_root_ca_thumbprint" {
   type        = string
   description = "Thumbprint of Root CA for EKS OIDC"
-  default     = "9e99a48a9960b14926bb7f3b02e22da2b0ab7280"
+  default     = ""
 }
 
 #
