@@ -2,7 +2,6 @@
 
 ##  AWS EKS infrastructure architecture
 
-all info about architect Design:
 
 ![Alt text](./Capture.PNG)
 
