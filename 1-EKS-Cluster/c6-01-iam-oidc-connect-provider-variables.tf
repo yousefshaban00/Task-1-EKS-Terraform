@@ -1,7 +1,7 @@
 # Input Variables - AWS IAM OIDC Connect Provider
 
 
-# EKS OIDC ROOT CA Thumbprint 
+# EKS OIDC ROOT CA Thumbprint
 variable "eks_oidc_root_ca_thumbprint" {
   type        = string
   description = "Thumbprint of Root CA for EKS OIDC"
