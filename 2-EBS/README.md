@@ -1,9 +1,5 @@
-##  Setup a Kubernetes cluster on AWS EKS infrastructure
+##  Setup and Deploy EKS EBS CSI Driver as a AWS-EKS Add-On
 
-
-all info about architect Design:
-
-![Alt text](./Capture.PNG)
 
 
 ###  install EKS EBS CSI Driver as a AWS-EKS Add-On
