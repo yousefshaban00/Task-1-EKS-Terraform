@@ -32,5 +32,109 @@ The MapRoles field in the aws-auth ConfigMap is used to specify the IAM roles th
 This is another way of providing access directly to the IAM users instead of AssumedRoles. This is relatively easy but also a bit cluttered and not usually an organized practice, as the number of users increases, it will also add more lines to the aws-auth ConfigMap making it more messy. Also, using AssumedRole is much more secure way of communicating with the cluster than directly using the IAM user, as the temporary credentials give you access to the cluster only for a limited time until you regenerate the token.
 
 
+**Define Remote State Data Source:** `c2-remote-state-datasource.tf`
+```
+# Kubernetes Resource: Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev
+
+```
+
+
+
+**Define Remote State Data Source:** `c2-remote-state-datasource.tf`
+```
+# Kubernetes Resource: Role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: dev-ns-role
+  namespace: dev
+rules:
+- apiGroups: ["", "extensions", "apps"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["batch"]
+  resources:
+  - jobs
+  - cronjobs
+  verbs: ["*"]
+---
+# Kubernetes Resource: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dev-ns-rolebinding
+  namespace: dev
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: dev-ns-role
+subjects:
+- kind: Group
+  namespace: dev
+  name: eks-developer-group
+
+```
+
+
+
+
+**Define Remote State Data Source:** `c2-remote-state-datasource.tf`
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: eksdeveloper-clusterrole
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  - namespaces
+  - pods
+  - events
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - statefulsets
+  - replicasets
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - get
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: eksdeveloper-clusterrolebinding
+roleRef:
+  kind: ClusterRole
+  name: eksdeveloper-clusterrole
+  apiGroup: rbac.authorization.k8s.io  
+subjects:
+- kind: Group
+  name: eks-developer-group
+  apiGroup: rbac.authorization.k8s.io
+
+
+```
+
+
+
+
 
 
