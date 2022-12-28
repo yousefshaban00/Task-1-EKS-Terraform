@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aws-auth
+  namespace: kube-system
+data:
+  mapRoles: |
+    - "groups":
+      - "system:bootstrappers"
+      - "system:nodes"
+      "rolearn": "arn:aws:iam::180789647333:role/radio-dev-eks-nodegroup-role"
+      "username": "system:node:{{EC2PrivateDNSName}}"
+    - "groups":
+      - "system:masters"
+      "rolearn": "arn:aws:iam::180789647333:role/radio-dev-eks-admin-role"
+      "username": "eks-admin"
+    - "groups":
+      - "eks-readonly-group"
+      "rolearn": "arn:aws:iam::180789647333:role/radio-dev-eks-readonly-role"
+      "username": "eks-readonly"
+    - "groups":
+      - "eks-developer-group"
+      "rolearn": "arn:aws:iam::180789647333:role/radio-dev-eks-developer-role"
+      "username": "eks-developer"
+  mapUsers: |
+    - "groups":
+      - "system:masters"
+      "userarn": "arn:aws:iam::180789647333:user/radio-dev-eksadmin2"
+      "username": "radio-dev-eksadmin2"
+    - "groups":
+      - "system:masters"
+      "userarn": "arn:aws:iam::180789647333:user/radio-dev-eksadmin1"
+      "username": "radio-dev-eksadmin1"
