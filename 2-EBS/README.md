@@ -1,12 +1,9 @@
-##  Setup a Kubernetes cluster on AWS EKS infrastructure
+##  Setup and Deploy EKS EBS CSI Driver as a AWS-EKS Add-On
 
 
-all info about architect Design:
 
-![Alt text](./Capture.PNG)
-
-
-###  install EKS EBS CSI Driver as a AWS-EKS Add-On
+###  Install EKS EBS CSI Driver as a AWS-EKS Add-On
+---
 
 The EBS Container Storage Interface (CSI) driver is a plugin for the Kubernetes Container Storage Interface (CSI) that allows you to use Amazon Elastic Block Store (EBS) volumes as persistent storage for your applications running on Amazon Elastic Container Service for Kubernetes (EKS).
 
