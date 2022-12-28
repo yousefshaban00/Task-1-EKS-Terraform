@@ -32,7 +32,7 @@ The MapRoles field in the aws-auth ConfigMap is used to specify the IAM roles th
 This is another way of providing access directly to the IAM users instead of AssumedRoles. This is relatively easy but also a bit cluttered and not usually an organized practice, as the number of users increases, it will also add more lines to the aws-auth ConfigMap making it more messy. Also, using AssumedRole is much more secure way of communicating with the cluster than directly using the IAM user, as the temporary credentials give you access to the cluster only for a limited time until you regenerate the token.
 
 
-**Define Remote State Data Source:** `c2-remote-state-datasource.tf`
+**Define k8s-dev-namespace :** `00-k8s-dev-namespace.yaml`
 ```
 # Kubernetes Resource: Namespace
 apiVersion: v1
@@ -44,7 +44,7 @@ metadata:
 
 
 
-**Define Remote State Data Source:** `c2-remote-state-datasource.tf`
+**Define k8s-clusterrole-clusterrolebinding:** `01-k8s-clusterrole-clusterrolebinding.yaml`
 ```
 # Kubernetes Resource: Role
 apiVersion: rbac.authorization.k8s.io/v1
@@ -82,7 +82,7 @@ subjects:
 
 
 
-**Define Remote State Data Source:** `c2-remote-state-datasource.tf`
+**Define k8s-role-rolebinding-dev-namespacee:** `02-k8s-role-rolebinding-dev-namespace.yaml`
 ```
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -132,6 +132,149 @@ subjects:
 
 
 ```
+
+**Define eks-console-full-access:** `eks-console-full-access.yaml`
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: eks-console-dashboard-full-access-clusterrole
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  - namespaces
+  - pods
+  - events
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - statefulsets
+  - replicasets
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - get
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: eks-console-dashboard-full-access-binding
+subjects:
+- kind: Group
+  name: eks-console-dashboard-full-access-group
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: eks-console-dashboard-full-access-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+
+
+```
+
+
+
+**Define eks-console-restricted-access :** `eks-console-restricted-access.yaml`
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: eks-console-dashboard-restricted-access-clusterrole
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  - namespaces
+  verbs:
+  - get
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: eks-console-dashboard-restricted-access-clusterrole-binding
+subjects:
+- kind: Group
+  name: eks-console-dashboard-restricted-access-group
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: eks-console-dashboard-restricted-access-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: eks-console-dashboard-restricted-access-role
+rules:
+- apiGroups:
+  - ""
+  resources: 
+  - pods
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - statefulsets
+  - replicasets
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - get
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eks-console-dashboard-restricted-access-role-binding
+  namespace: default
+subjects:
+- kind: Group
+  name: eks-console-dashboard-restricted-access-group
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: eks-console-dashboard-restricted-access-role
+  apiGroup: rbac.authorization.k8s.io
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
