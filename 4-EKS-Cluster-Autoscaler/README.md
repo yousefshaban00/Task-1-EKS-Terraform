@@ -1,4 +1,4 @@
-###  Setup a Kubernetes cluster on AWS EKS infrastructure
+###  Setup EKS Cluster Auto Scaling on AWS EKS infrastructure
 
 ## EKS Cluster Auto Scaling
 

@@ -1,10 +1,7 @@
-###  Setup a Kubernetes cluster on AWS EKS infrastructure
+###  Setup Monitoring and logging on AWS EKS infrastructure
 
 ## EKS Monitoring and logging
 
-all info about architect Design:
-
-![Alt text](./Capture.PNG)
 
 There are several ways to monitor and log the resources and applications running on an Amazon Elastic Container Service for Kubernetes (EKS) cluster. Here are some common options:
 
