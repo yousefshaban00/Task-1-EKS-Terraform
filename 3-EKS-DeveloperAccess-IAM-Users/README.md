@@ -1,6 +1,8 @@
-###  Setup a Kubernetes cluster on AWS EKS infrastructure
 
-##  Test EKS-DeveloperAccess-IAM-Users
+
+###  Test EKS-DeveloperAccess-IAM-Users
+
+#### Enabling IAM users/roles Access on Amazon EKS cluster
 
 
 
