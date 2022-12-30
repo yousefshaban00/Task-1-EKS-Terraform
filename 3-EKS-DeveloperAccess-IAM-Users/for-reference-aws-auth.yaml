@@ -8,28 +8,28 @@ data:
     - "groups":
       - "system:bootstrappers"
       - "system:nodes"
-      "rolearn": "arn:aws:iam::180789647333:role/radio-dev-eks-nodegroup-role"
+      "rolearn": "arn:aws:iam::962490649366:role/radio-dev-eks-nodegroup-role"
       "username": "system:node:{{EC2PrivateDNSName}}"
     - "groups":
       - "system:masters"
-      "rolearn": "arn:aws:iam::180789647333:role/radio-dev-eks-admin-role"
+      "rolearn": "arn:aws:iam::962490649366:role/radio-dev-eks-admin-role"
       "username": "eks-admin"
     - "groups":
       - "eks-readonly-group"
-      "rolearn": "arn:aws:iam::180789647333:role/radio-dev-eks-readonly-role"
+      "rolearn": "arn:aws:iam::962490649366:role/radio-dev-eks-readonly-role"
       "username": "eks-readonly"
     - "groups":
       - "eks-developer-group"
-      "rolearn": "arn:aws:iam::180789647333:role/radio-dev-eks-developer-role"
+      "rolearn": "arn:aws:iam::962490649366:role/radio-dev-eks-developer-role"
       "username": "eks-developer"
   mapUsers: |
     - "groups":
       - "system:masters"
-      "userarn": "arn:aws:iam::180789647333:user/radio-dev-eksadmin2"
+      "userarn": "arn:aws:iam::962490649366:user/radio-dev-eksadmin2"
       "username": "radio-dev-eksadmin2"
     - "groups":
       - "system:masters"
-      "userarn": "arn:aws:iam::180789647333:user/radio-dev-eksadmin1"
+      "userarn": "arn:aws:iam::962490649366:user/radio-dev-eksadmin1"
       "username": "radio-dev-eksadmin1"
     - "groups":
       - "eks-console-dashboard-full-access-group"
