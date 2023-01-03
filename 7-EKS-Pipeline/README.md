@@ -1169,9 +1169,8 @@ phases:
       
       #### BuildSpec for some project that need to access and authenticate with EKS and use Kubectl on Terraform
       
-      
   ```   
- # terraform -chdir=./2-EBS/1-EBS-addon-terraform/ apply -auto-approve
+ 
 
 version: 0.2
 
