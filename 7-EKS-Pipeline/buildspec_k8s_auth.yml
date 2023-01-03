@@ -1,0 +1,69 @@
+ # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ # SPDX-License-Identifier: MIT-0
+ #
+ # Permission is hereby granted, free of charge, to any person obtaining a copy of this
+ # software and associated documentation files (the "Software"), to deal in the Software
+ # without restriction, including without limitation the rights to use, copy, modify,
+ # merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ # permit persons to whom the Software is furnished to do so.
+ #
+ # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ # INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ # PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ # HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ #  - terraform -chdir=./2-EBS/1-EBS-addon-terraform/ init
+ # terraform -chdir=./2-EBS/1-EBS-addon-terraform/ apply -auto-approve
+
+version: 0.2
+
+phases:
+
+  pre_build:
+    commands:
+     - echo Set parameter
+     - REGION=us-east-2
+     - AWS_ACCOUNTID=962490649366
+     #- COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1–7)
+    # - IMAGE_TAG=${COMMIT_HASH:=latest}
+     - EKS_NAME=radio-dev-ekstask1
+     - apt-get update
+     - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+     - unzip awscliv2.zip
+     - sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
+  #   - apt install -y awscli
+     -  curl -o aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.21.2/2021-07-05/bin/linux/amd64/aws-iam-authenticator
+     - chmod +x ./aws-iam-authenticator
+     - mkdir -p ~/bin && cp ./aws-iam-authenticator ~/bin/aws-iam-authenticator && export PATH=~/bin:$PATH
+     - curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.24.7/2022-10-31/bin/linux/amd64/kubectl
+     - chmod +x kubectl
+     - mv ./kubectl /usr/local/bin/kubectl
+     - echo Update kubeconfig…
+     - aws eks update-kubeconfig --name ${EKS_NAME} --region ${REGION}
+     - kubectl version --short --client
+   #  - cat ~/.aws/config
+  #  - cat ~/.aws/credentials
+     - cat ~/.kube/config
+     - aws sts get-caller-identity
+     - mkdir -p ~/.aws/
+   #  - echo "[profile codebuild]" >> ~/.aws/config
+  #   - echo "role_arn = arn:aws:iam::$AWS_ACCOUNT_ID:role/containerAppBuildProjectRole" >> ~/.aws/config
+   #  - echo "region = us-east-2"
+   #  - echo "output = json"
+   #  - cat ~/.aws/config
+  #  -  aws eks update-kubeconfig --name ${EKS_NAME} --region ${REGION} --role-arn arn:aws:iam::962490649366:role/containerAppBuildProjectRole
+     -  aws eks update-kubeconfig --name ${EKS_NAME} --region ${REGION} 
+     - kubectl get pod
+     - kubectl get svc
+  install:
+    commands:
+
+      
+  build:
+    commands:
+     # - terraform apply -auto-approve
+
+  post_build:
+    commands:
+      - echo terraform completed on `date`

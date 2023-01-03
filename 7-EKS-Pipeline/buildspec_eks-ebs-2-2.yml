@@ -1,0 +1,64 @@
+
+
+version: 0.2
+
+phases:
+
+  install:
+    commands:
+      - "apt install unzip -y"
+      - "wget https://releases.hashicorp.com/terraform/1.4.0-alpha20221207/terraform_1.4.0-alpha20221207_linux_amd64.zip"
+      - "unzip terraform_1.4.0-alpha20221207_linux_amd64.zip"
+      - "mv terraform /usr/local/bin/"
+  pre_build:
+    commands:
+      - cd EKS-Terraform-Pipeline-CodeBuild/2-EBS/2-terraform-deploy-Webapp-User-mgmt-system-WebApp/
+      - cat c1-versions.tf
+      - terraform version
+      - terraform init
+      - terraform plan
+      
+  build:
+    commands:
+      - terraform apply -auto-approve
+      - echo Set parameter
+      - REGION=us-east-2
+      - AWS_ACCOUNTID=962490649366
+     #- COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1–7)
+    # - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - EKS_NAME=core-dev-ekstask2
+      - apt-get update
+      - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      - unzip awscliv2.zip
+      - sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
+  #   - apt install -y awscli
+      -  curl -o aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.21.2/2021-07-05/bin/linux/amd64/aws-iam-authenticator
+      - chmod +x ./aws-iam-authenticator
+      - mkdir -p ~/bin && cp ./aws-iam-authenticator ~/bin/aws-iam-authenticator && export PATH=~/bin:$PATH
+      - curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.24.7/2022-10-31/bin/linux/amd64/kubectl
+      - chmod +x kubectl
+      - mv ./kubectl /usr/local/bin/kubectl
+      - echo Update kubeconfig…
+      - aws eks update-kubeconfig --name ${EKS_NAME} --region ${REGION}
+      - kubectl version --short --client
+   #  - cat ~/.aws/config
+  #  - cat ~/.aws/credentials
+      - cat ~/.kube/config
+      - aws sts get-caller-identity
+      - mkdir -p ~/.aws/
+   #  - echo "[profile codebuild]" >> ~/.aws/config
+  #   - echo "role_arn = arn:aws:iam::$AWS_ACCOUNT_ID:role/containerAppBuildProjectRole" >> ~/.aws/config
+   #  - echo "region = us-east-1"
+   #  - echo "output = json"
+   #  - cat ~/.aws/config
+  #  -  aws eks update-kubeconfig --name ${EKS_NAME} --region ${REGION} --role-arn arn:aws:iam::962490649366:role/containerAppBuildProjectRole
+      - aws sts get-caller-identity
+      -  aws eks update-kubeconfig --name ${EKS_NAME} --region ${REGION} 
+      - kubectl get pod
+      - kubectl get svc
+      - kubectl get cm aws-auth -n kube-system -oyaml
+
+
+  post_build:
+    commands:
+      - echo terraform completed on `date`
