@@ -8,7 +8,7 @@
 
 #### Step 00: We define Terraform Settings and provider `c1-version.tf`
 
-```python
+```Bash
 terraform {
   required_version = ">= 1.0.0"
    required_providers {
