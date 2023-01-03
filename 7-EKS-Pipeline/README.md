@@ -1223,10 +1223,9 @@ phases:
 
   post_build:
     commands:
-      - echo terraform completed on `date`
+
       
-  
-         ```
+ ```
       
       
      
