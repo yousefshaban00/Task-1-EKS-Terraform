@@ -2,6 +2,9 @@
 
 **we use AWS CodePipeline to make automatically test,build and deploy python app (Cluster health check) as the follwoing steps:**
 
+![Alt text](Task-1-EKS-Terraform/7-EKS-Pipeline/screencapture-us-east-2-console-aws-amazon-codesuite-codepipeline-pipelines-EKS-pipeline-view-2023-01-03-19_03_42.png)
+
+
 
 #### Step 00: We define Terraform Settings and provider `c1-version.tf`
 
@@ -452,7 +455,7 @@ variable "artifacts_bucket_name" {
 #### Outputs and Verify 
 
 
-![Alt text](python_app_Pipeline/Capture1.PNG)
+
 ![Alt text](python_app_Pipeline/Capture2.PNG)
 ```
 
