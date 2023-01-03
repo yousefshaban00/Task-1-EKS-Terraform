@@ -8,7 +8,7 @@
 
 #### Step 00: We define Terraform Settings and provider `c1-version.tf`
 
-```
+```python
 terraform {
   required_version = ">= 1.0.0"
    required_providers {
@@ -20,12 +20,12 @@ terraform {
 
   # Adding Backend as S3 for Remote State Storage
   backend "s3" {
-    bucket = "aws-eks-terraform"
-    key    = "dev/py-pipelinee/terraform.tfstate"
-    region = "us-east-1" 
+    bucket = "aws-eks-terraform-2"
+    key    = "dev/py-pipelinee-eks/terraform.tfstate"
+    region = "us-east-2" 
 
     # For State Locking
-    dynamodb_table = "py-pipeline"    
+    dynamodb_table = "py-pipeline-eks"    
   }    
 
 
