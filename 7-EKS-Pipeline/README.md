@@ -1,6 +1,6 @@
-## AWS CodePipeline+CodeBuild using Terraform to make automation process for Python Task
+## AWS CodePipeline+CodeBuild using Terraform to make automation process to deploy AWS EKS Cluster.
 
-**we use AWS CodePipeline to make automatically test,build and deploy python app (Cluster health check) as the follwoing steps:**
+**we use AWS CodePipeline to make automatically test,build and deploy AWS EKS Cluster as the follwoing steps:**
 
 ![Alt text](screencapture-us-east-2-console-aws-amazon-codesuite-codepipeline-pipelines-EKS-pipeline-view-2023-01-03-19_03_42.png)
 
@@ -1067,24 +1067,173 @@ stage {
 
 
 
-#### BuildSpec for Each Projects
+#### BuildSpec for Each Projects to make terraform operation for terraform files / project 
 
-
-
-
-
-
-![Alt text](python_app_Pipeline/Capture2.PNG)
 ```
+version: 0.2
 
-[Container] 2023/01/02 17:24:53 Running command echo $IMAGE_REPO_NAME
-yousefshaban/my-python-app
+phases:
 
-[Container] 2023/01/02 17:24:53 Running command echo $IMAGE_TAG
-latest
+  install:
+    commands:
+      - "apt install unzip -y"
+      - "wget https://releases.hashicorp.com/terraform/1.4.0-alpha20221207/terraform_1.4.0-alpha20221207_linux_amd64.zip"
+      - "unzip terraform_1.4.0-alpha20221207_linux_amd64.zip"
+      - "mv terraform /usr/local/bin/"
+  pre_build:
+    commands:
+      - cd (Provide path from root of your repository) 
+      - cd Task-1-EKS-Terraform/7-EKS-Pipeline/1-EKS
+      - cd Task-1-EKS-Terraform/7-EKS-Pipeline/4-EKS-Cluster-Autoscaler/1-cluster-autoscaler-install-terraform-manifests/
+      - terraform version
+      - terraform init
+      - terraform plan
+      
+  build:
+    commands:
+      - terraform apply -auto-approve
 
-[Container] 2023/01/02 17:24:53 Running command password=$(aws ssm get-parameters --region us-east-1 --names PASS --with-decryption --query Parameters[0].Value)
+  post_build:
+    commands:
+      - echo terraform completed on `date`
+   ```
+   
+      
+   #### BuildSpec for some project that need to access and authenticate with EKS 
+   
+   ```
+   version: 0.2
 
-[Container] 2023/01/02 17:24:53 Running command password=`echo $password | sed -e 's/^"//' -e 's/"$//'`
+phases:
 
-[Container] 2023/01/02 17:24:53 Running command python python_app_Pipeline/test.py
+  install:
+    commands:
+      - "apt install unzip -y"
+      - "wget https://releases.hashicorp.com/terraform/1.4.0-alpha20221207/terraform_1.4.0-alpha20221207_linux_amd64.zip"
+      - "unzip terraform_1.4.0-alpha20221207_linux_amd64.zip"
+      - "mv terraform /usr/local/bin/"
+  pre_build:
+    commands:
+      - cd EKS-Terraform-Pipeline-CodeBuild/2-EBS/2-terraform-deploy-Webapp-User-mgmt-system-WebApp/
+      - cat c1-versions.tf
+      - terraform version
+      - terraform init
+      - terraform plan
+      
+  build:
+    commands:
+      - terraform apply -auto-approve
+      - echo Set parameter
+      - REGION=us-east-2
+      - AWS_ACCOUNTID=962490649366
+   #  - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1–7)
+   #  - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - EKS_NAME=core-dev-ekstask2
+      - apt-get update
+      - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      - unzip awscliv2.zip
+      - sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
+   #  - apt install -y awscli
+      - curl -o aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.21.2/2021-07-05/bin/linux/amd64/aws-iam-authenticator
+      - chmod +x ./aws-iam-authenticator
+      - mkdir -p ~/bin && cp ./aws-iam-authenticator ~/bin/aws-iam-authenticator && export PATH=~/bin:$PATH
+      - curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.24.7/2022-10-31/bin/linux/amd64/kubectl
+      - chmod +x kubectl
+      - mv ./kubectl /usr/local/bin/kubectl
+      - echo Update kubeconfig…
+      - aws eks update-kubeconfig --name ${EKS_NAME} --region ${REGION}
+      - kubectl version --short --client
+   #  - cat ~/.aws/config
+   #  - cat ~/.aws/credentials
+      - cat ~/.kube/config
+      - aws sts get-caller-identity
+      - mkdir -p ~/.aws/
+   #  - echo "[profile codebuild]" >> ~/.aws/config
+   #  - echo "role_arn = arn:aws:iam::$AWS_ACCOUNT_ID:role/containerAppBuildProjectRole" >> ~/.aws/config
+   #  - echo "region = us-east-1"
+   #  - echo "output = json"
+   #  - cat ~/.aws/config
+   #  - aws eks update-kubeconfig --name ${EKS_NAME} --region ${REGION} --role-arn arn:aws:iam::962490649366:role/containerAppBuildProjectRole
+      - aws sts get-caller-identity
+      - aws eks update-kubeconfig --name ${EKS_NAME} --region ${REGION} 
+      - kubectl get pod
+      - kubectl get svc
+      - kubectl get cm aws-auth -n kube-system -oyaml
+
+
+  post_build:
+    commands:
+      - echo terraform completed on `date`
+
+      ```
+      
+      #### BuildSpec for some project that need to access and authenticate with EKS and use Kubectl on Terraform
+      
+      
+  ```   
+ # terraform -chdir=./2-EBS/1-EBS-addon-terraform/ apply -auto-approve
+
+version: 0.2
+
+phases:
+
+  install:
+    commands:
+      - "apt install unzip -y"
+      - "wget https://releases.hashicorp.com/terraform/1.4.0-alpha20221207/terraform_1.4.0-alpha20221207_linux_amd64.zip"
+      - "unzip terraform_1.4.0-alpha20221207_linux_amd64.zip"
+      - "mv terraform /usr/local/bin/"
+  pre_build:
+    commands:
+      - cd EKS-Terraform-Pipeline-CodeBuild/6-Monitoring-Logging-Terraform/1-cloudwatchagent-fluentbit-terraform-manifests/
+      - cat c1-versions.tf
+      - terraform version
+      - echo Set parameter
+      - REGION=us-east-2
+      - AWS_ACCOUNTID=962490649366
+      - EKS_NAME=core-dev-ekstask2
+      - apt-get update
+      - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      - unzip awscliv2.zip
+      - sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
+      -  curl -o aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.21.2/2021-07-05/bin/linux/amd64/aws-iam-authenticator
+      - chmod +x ./aws-iam-authenticator
+      - mkdir -p ~/bin && cp ./aws-iam-authenticator ~/bin/aws-iam-authenticator && export PATH=~/bin:$PATH
+      - curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.24.7/2022-10-31/bin/linux/amd64/kubectl
+      - chmod +x kubectl
+      - mv ./kubectl /usr/local/bin/kubectl
+      - echo Update kubeconfig…
+      - aws eks update-kubeconfig --name ${EKS_NAME} --region ${REGION}
+      - kubectl version --short --client
+      - cat ~/.kube/config
+      - aws sts get-caller-identity
+      - mkdir -p ~/.aws/
+      - aws sts get-caller-identity
+      - aws eks update-kubeconfig --name ${EKS_NAME} --region ${REGION} 
+      - kubectl get pod
+      - kubectl get svc
+      - kubectl get cm aws-auth -n kube-system -oyaml
+      - terraform init
+      - terraform plan
+      
+  build:
+    commands:
+      - terraform apply -auto-approve
+
+  post_build:
+    commands:
+      - echo terraform completed on `date`      
+      
+      
+      
+      
+     ```
+      
+      
+      
+      
+      
+      
+      
+      
+
