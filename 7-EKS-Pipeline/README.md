@@ -8,7 +8,7 @@
 
 #### Step 00: We define Terraform Settings and provider `c1-version.tf`
 
-```Python
+```
 terraform {
   required_version = ">= 1.0.0"
    required_providers {
@@ -127,89 +127,6 @@ EOF
 
 ```
 
-*  **buildspec  = "${file("buildspec_python.yml")}"**
-
-```
-version: 0.2
-
-#env:
-  #variables:
-     # key: "There are no variables"
-  #parameter-store:
-     # key: "There are no variables"
-
-phases:
-  install:
-    #If you use the Ubuntu standard image 2.0 or later, you must specify runtime-versions.
-    #If you specify runtime-versions and use an image other than Ubuntu standard image 2.0, the build fails.
-    runtime-versions:
-       python: 3.10
-
-  pre_build:
-    commands:
-     - apt-get update
-     - pip install -r python_app_Pipeline/Dockerfile_py_Pipeline/requirements.txt
-     - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-     - unzip awscliv2.zip
-     - sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
-   #  - REGION=us-east-1
-     - REGION=$(aws ec2 describe-availability-zones --output text --query 'AvailabilityZones[0].[RegionName]')
-
-     - AWS_ACCOUNTID=962490649366
-     #- COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1–7)
-    # - IMAGE_TAG=${COMMIT_HASH:=latest}
-   #  - EKS_NAME= $(aws eks list-clusters --query 'clusters[0]' --output text)
-     - EKS_NAME=radio-dev-ekstask1
-     -  curl -o aws-iam-authenticator https://amazon-eks.s3.us-east-1.amazonaws.com/1.21.2/2021-07-05/bin/linux/amd64/aws-iam-authenticator
-     - chmod +x ./aws-iam-authenticator
-     - mkdir -p ~/bin && cp ./aws-iam-authenticator ~/bin/aws-iam-authenticator && export PATH=~/bin:$PATH
-     - curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.24.7/2022-10-31/bin/linux/amd64/kubectl
-     - chmod +x kubectl
-     - mv ./kubectl /usr/local/bin/kubectl
-     - echo Update kubeconfig…
-     - aws eks update-kubeconfig --name ${EKS_NAME} --region ${REGION}
-     - kubectl version --short --client
-   #  - cat ~/.aws/config
-  #  - cat ~/.aws/credentials
-  #   - cat ~/.kube/config
-     - aws sts get-caller-identity
-   #  - mkdir -p ~/.aws/
-   #  - echo "[profile codebuild]" >> ~/.aws/config
-  #   - echo "role_arn = arn:aws:iam::$AWS_ACCOUNT_ID:role/containerAppBuildProjectRole" >> ~/.aws/config
-   #  - echo "region = us-east-1"
-   #  - echo "output = json"
-   #  - cat ~/.aws/config
-  #  -  aws eks update-kubeconfig --name ${EKS_NAME} --region ${REGION} --role-arn arn:aws:iam::962490649366:role/containerAppBuildProjectRole
-    # -  aws eks update-kubeconfig --name ${EKS_NAME} --region ${REGION} 
-     - kubectl get pod
-     - kubectl get svc
-     - echo $IMAGE_REPO_NAME
-     - echo $IMAGE_TAG
-     #- echo $PASS
-     # define PASS as AWS SSM Parameter Store 
-     - password=$(aws ssm get-parameters --region us-east-1 --names PASS --with-decryption --query Parameters[0].Value)
-     - password=`echo $password | sed -e 's/^"//' -e 's/"$//'`
-     - python python_app_Pipeline/test.py
-
-     #- $IMAGE_REPO_NAME=yousefshaban/my-python-app
-    # - $IMAGE_TAG=latest
-
-  build:
-    commands:
-      - docker login --username yousefshaban --password ${password}
-      - echo Build started on `date`
-      - echo Building the Docker image...          
-      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG python_app_Pipeline/Dockerfile_py_Pipeline
-      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $IMAGE_REPO_NAME:$IMAGE_TAG
-  post_build:
-    commands:
-      - echo Build completed on `date`
-      - echo Pushing the Docker image...
-      - docker push $IMAGE_REPO_NAME:$IMAGE_TAG
-
-
-```
-
 
 
 
@@ -220,10 +137,10 @@ phases:
 ```
 # aws codebuild - First - python and auth with K8s  ************************************
 
-resource "aws_codebuild_project" "containerAppBuild" {
+resource "aws_codebuild_project" "EKSBuild" {
   badge_enabled  = false
   build_timeout  = 60
-  name           = "python_app"
+  name           = "EKS-Cluster"
 
 
 
@@ -249,17 +166,17 @@ resource "aws_codebuild_project" "containerAppBuild" {
     image_pull_credentials_type = "CODEBUILD"
     privileged_mode             = true
     type                        = "LINUX_CONTAINER"
-    environment_variable {
-              name  = "IMAGE_REPO_NAME"
-              type  = "PLAINTEXT"
-              value = "yousefshaban/my-python-app"
-    }
+    # environment_variable {
+    #           name  = "IMAGE_REPO_NAME"
+    #           type  = "PLAINTEXT"
+    #           value = "yousefshaban/my-python-app"
+    # }
 
-    environment_variable {
-              name  = "IMAGE_TAG"
-              type  = "PLAINTEXT"
-              value = "latest"
-    }
+    # environment_variable {
+    #           name  = "IMAGE_TAG"
+    #           type  = "PLAINTEXT"
+    #           value = "latest"
+    # }
 
 
 
@@ -281,11 +198,446 @@ resource "aws_codebuild_project" "containerAppBuild" {
 
   source {
 
-    buildspec  = "${file("buildspec_python.yml")}"
+    buildspec  = "${file("buildspec_eks-1.yml")}"
     git_clone_depth     = 0
     insecure_ssl        = false
     report_build_status = false
   #  type                = "CODEPIPELINE"
+    type                = "CODEPIPELINE"
+  }
+}
+
+
+#aws codeBuild - Project 2-1 - Install EBS  *********************************************
+resource "aws_codebuild_project" "containerAppBuild_ebs" {
+  badge_enabled  = false
+  build_timeout  = 60
+  name           = "eks-ebs"
+
+  queued_timeout = 480
+  service_role   = aws_iam_role.containerAppBuildProjectRole.arn
+  tags = {
+    Environment = var.env
+  }
+
+  artifacts {
+    encryption_disabled = false
+    packaging = "NONE"
+    type      = "CODEPIPELINE"
+  }
+environment {
+    compute_type                = "BUILD_GENERAL1_SMALL"
+    image                       = "aws/codebuild/standard:6.0"
+    image_pull_credentials_type = "CODEBUILD"
+    privileged_mode             = true
+    type                        = "LINUX_CONTAINER"
+  }
+
+  logs_config {
+    cloudwatch_logs {
+      status = "ENABLED"
+    }
+
+    s3_logs {
+      encryption_disabled = false
+      status              = "DISABLED"
+    }
+  }
+
+  source {
+    # buildspec           = data.template_file.buildspec.rendered
+    buildspec  = "${file("buildspec_eks-ebs-2.yml")}"
+    git_clone_depth     = 0
+    insecure_ssl        = false
+    report_build_status = false
+    type                = "CODEPIPELINE"
+  }
+}
+
+#aws codeBuild - Project 2-2 - deploy app to check EBS  *********************************************
+resource "aws_codebuild_project" "containerAppBuild_ebs_app" {
+  badge_enabled  = false
+  build_timeout  = 60
+  name           = "ebs_app"
+
+  queued_timeout = 480
+  service_role   = aws_iam_role.containerAppBuildProjectRole.arn
+  tags = {
+    Environment = var.env
+  }
+
+  artifacts {
+    encryption_disabled = false
+    packaging = "NONE"
+    type      = "CODEPIPELINE"
+  }
+environment {
+    compute_type                = "BUILD_GENERAL1_SMALL"
+    image                       = "aws/codebuild/standard:6.0"
+    image_pull_credentials_type = "CODEBUILD"
+    privileged_mode             = true
+    type                        = "LINUX_CONTAINER"
+  }
+
+  logs_config {
+    cloudwatch_logs {
+      status = "ENABLED"
+    }
+
+    s3_logs {
+      encryption_disabled = false
+      status              = "DISABLED"
+    }
+  }
+
+  source {
+    # buildspec           = data.template_file.buildspec.rendered
+    buildspec  = "${file("buildspec_eks-ebs-2-2.yml")}"
+    git_clone_depth     = 0
+    insecure_ssl        = false
+    report_build_status = false
+    type                = "CODEPIPELINE"
+  }
+}
+
+
+#aws codeBuild - Project 3 - 3-EKS-DeveloperAccess-IAM-Users 3-k8sresources-terraform-manifests  *********************************************
+
+resource "aws_codebuild_project" "containerAppBuild_iam" {
+  badge_enabled  = false
+  build_timeout  = 60
+  name           = "eks-iam"
+
+  queued_timeout = 480
+  service_role   = aws_iam_role.containerAppBuildProjectRole.arn
+  tags = {
+    Environment = var.env
+  }
+
+  artifacts {
+    encryption_disabled = false
+    packaging = "NONE"
+    type      = "CODEPIPELINE"
+  }
+environment {
+    compute_type                = "BUILD_GENERAL1_SMALL"
+    image                       = "aws/codebuild/standard:6.0"
+    image_pull_credentials_type = "CODEBUILD"
+    privileged_mode             = true
+    type                        = "LINUX_CONTAINER"
+  }
+
+  logs_config {
+    cloudwatch_logs {
+      status = "ENABLED"
+    }
+
+    s3_logs {
+      encryption_disabled = false
+      status              = "DISABLED"
+    }
+  }
+
+  source {
+    # buildspec           = data.template_file.buildspec.rendered
+    buildspec  = "${file("buildspec_eks-iam-3.yml")}"
+    git_clone_depth     = 0
+    insecure_ssl        = false
+    report_build_status = false
+    type                = "CODEPIPELINE"
+  }
+}
+
+
+
+#aws codeBuild - project 4 -  4-EKS-Cluster-Autoscaler  4.1 install CAS  *********
+
+
+resource "aws_codebuild_project" "containerAppBuild_cas" {
+  badge_enabled  = false
+  build_timeout  = 60
+  name           = "cas"
+
+  queued_timeout = 480
+  service_role   = aws_iam_role.containerAppBuildProjectRole.arn
+  tags = {
+    Environment = var.env
+  }
+
+  artifacts {
+    encryption_disabled = false
+    packaging = "NONE"
+    type      = "CODEPIPELINE"
+  }
+environment {
+    compute_type                = "BUILD_GENERAL1_SMALL"
+    image                       = "aws/codebuild/standard:6.0"
+    image_pull_credentials_type = "CODEBUILD"
+    privileged_mode             = true
+    type                        = "LINUX_CONTAINER"
+  }
+
+  logs_config {
+    cloudwatch_logs {
+      status = "ENABLED"
+    }
+
+    s3_logs {
+      encryption_disabled = false
+      status              = "DISABLED"
+    }
+  }
+
+  source {
+    # buildspec           = data.template_file.buildspec.rendered
+    buildspec  = "${file("buildspec_eks-cas-4.yml")}"
+    git_clone_depth     = 0
+    insecure_ssl        = false
+    report_build_status = false
+    type                = "CODEPIPELINE"
+  }
+}
+
+
+#aws codeBuild - project 4 -  4-EKS-Cluster-Autoscaler  4.2 deploy app  *********
+
+
+# resource "aws_codebuild_project" "containerAppBuild_cas_app" {
+#   badge_enabled  = false
+#   build_timeout  = 60
+#   name           = "cas_app"
+
+#   queued_timeout = 480
+#   service_role   = aws_iam_role.containerAppBuildProjectRole.arn
+#   tags = {
+#     Environment = var.env
+#   }
+
+#   artifacts {
+#     encryption_disabled = false
+#     packaging = "NONE"
+#     type      = "CODEPIPELINE"
+#   }
+# environment {
+#     compute_type                = "BUILD_GENERAL1_SMALL"
+#     image                       = "aws/codebuild/standard:6.0"
+#     image_pull_credentials_type = "CODEBUILD"
+#     privileged_mode             = true
+#     type                        = "LINUX_CONTAINER"
+#   }
+
+#   logs_config {
+#     cloudwatch_logs {
+#       status = "ENABLED"
+#     }
+
+#     s3_logs {
+#       encryption_disabled = false
+#       status              = "DISABLED"
+#     }
+#   }
+
+#   source {
+#     # buildspec           = data.template_file.buildspec.rendered
+#     buildspec  = "${file("buildspec_eks-cas-4-2.yml")}"
+#     git_clone_depth     = 0
+#     insecure_ssl        = false
+#     report_build_status = false
+#     type                = "CODEPIPELINE"
+#   }
+# }
+
+#aws codeBuild - project 5  **************************************************************
+
+#aws codeBuild - project 5 -  5.1 1-k8s-metrics-server-terraform-manifests *********
+
+resource "aws_codebuild_project" "containerAppBuild_metrics" {
+  badge_enabled  = false
+  build_timeout  = 60
+  name           = "metrics"
+
+  queued_timeout = 480
+  service_role   = aws_iam_role.containerAppBuildProjectRole.arn
+  tags = {
+    Environment = var.env
+  }
+
+  artifacts {
+    encryption_disabled = false
+    packaging = "NONE"
+    type      = "CODEPIPELINE"
+  }
+environment {
+    compute_type                = "BUILD_GENERAL1_SMALL"
+    image                       = "aws/codebuild/standard:6.0"
+    image_pull_credentials_type = "CODEBUILD"
+    privileged_mode             = true
+    type                        = "LINUX_CONTAINER"
+  }
+
+  logs_config {
+    cloudwatch_logs {
+      status = "ENABLED"
+    }
+
+    s3_logs {
+      encryption_disabled = false
+      status              = "DISABLED"
+    }
+  }
+
+  source {
+    # buildspec           = data.template_file.buildspec.rendered
+    buildspec  = "${file("buildspec_eks-hpa-5.yml")}"
+    git_clone_depth     = 0
+    insecure_ssl        = false
+    report_build_status = false
+    type                = "CODEPIPELINE"
+  }
+}
+
+
+#aws codeBuild - project 5 -  5.2 2-hpa-demo-yaml *********
+
+# containerAppBuild_efs_dynamic Project 4
+# resource "aws_codebuild_project" "containerAppBuild_hpa_demo" {
+#   badge_enabled  = false
+#   build_timeout  = 60
+#   name           = "hpa_demo"
+
+#   queued_timeout = 480
+#   service_role   = aws_iam_role.containerAppBuildProjectRole.arn
+#   tags = {
+#     Environment = var.env
+#   }
+
+#   artifacts {
+#     encryption_disabled = false
+#     packaging = "NONE"
+#     type      = "CODEPIPELINE"
+#   }
+# environment {
+#     compute_type                = "BUILD_GENERAL1_SMALL"
+#     image                       = "aws/codebuild/standard:6.0"
+#     image_pull_credentials_type = "CODEBUILD"
+#     privileged_mode             = true
+#     type                        = "LINUX_CONTAINER"
+#   }
+
+#   logs_config {
+#     cloudwatch_logs {
+#       status = "ENABLED"
+#     }
+
+#     s3_logs {
+#       encryption_disabled = false
+#       status              = "DISABLED"
+#     }
+#   }
+
+#   source {
+#     # buildspec           = data.template_file.buildspec.rendered
+#     buildspec  = "${file("buildspec_eks-hpa-5-2.yml")}"
+#     git_clone_depth     = 0
+#     insecure_ssl        = false
+#     report_build_status = false
+#     type                = "CODEPIPELINE"
+#   }
+# }
+
+
+
+#aws codeBuild - project 5 -  5.3 3-hpa-demo-terraform-manifests *********
+
+resource "aws_codebuild_project" "containerAppBuild_hpa_app" {
+  badge_enabled  = false
+  build_timeout  = 60
+  name           = "hpa_app"
+
+  queued_timeout = 480
+  service_role   = aws_iam_role.containerAppBuildProjectRole.arn
+  tags = {
+    Environment = var.env
+  }
+
+  artifacts {
+    encryption_disabled = false
+    packaging = "NONE"
+    type      = "CODEPIPELINE"
+  }
+environment {
+    compute_type                = "BUILD_GENERAL1_SMALL"
+    image                       = "aws/codebuild/standard:6.0"
+    image_pull_credentials_type = "CODEBUILD"
+    privileged_mode             = true
+    type                        = "LINUX_CONTAINER"
+  }
+
+  logs_config {
+    cloudwatch_logs {
+      status = "ENABLED"
+    }
+
+    s3_logs {
+      encryption_disabled = false
+      status              = "DISABLED"
+    }
+  }
+
+  source {
+    # buildspec           = data.template_file.buildspec.rendered
+    buildspec  = "${file("buildspec_eks-hpa-5-3.yml")}"
+    git_clone_depth     = 0
+    insecure_ssl        = false
+    report_build_status = false
+    type                = "CODEPIPELINE"
+  }
+}
+
+
+**aws codeBuild - project 6 -  6-Monitoring-Logging-Terraform**
+
+resource "aws_codebuild_project" "containerAppBuild_Monitoring" {
+  badge_enabled  = false
+  build_timeout  = 60
+  name           = "Monitoring"
+
+  queued_timeout = 480
+  service_role   = aws_iam_role.containerAppBuildProjectRole.arn
+  tags = {
+    Environment = var.env
+  }
+
+  artifacts {
+    encryption_disabled = false
+    packaging = "NONE"
+    type      = "CODEPIPELINE"
+  }
+environment {
+    compute_type                = "BUILD_GENERAL1_SMALL"
+    image                       = "aws/codebuild/standard:6.0"
+    image_pull_credentials_type = "CODEBUILD"
+    privileged_mode             = true
+    type                        = "LINUX_CONTAINER"
+  }
+
+  logs_config {
+    cloudwatch_logs {
+      status = "ENABLED"
+    }
+
+    s3_logs {
+      encryption_disabled = false
+      status              = "DISABLED"
+    }
+  }
+
+  source {
+    # buildspec           = data.template_file.buildspec.rendered
+    buildspec  = "${file("buildspec_eks-monitor-6.yml")}"
+    git_clone_depth     = 0
+    insecure_ssl        = false
+    report_build_status = false
     type                = "CODEPIPELINE"
   }
 }
@@ -305,8 +657,8 @@ resource "aws_s3_bucket" "cicd_bucket" {
 #  acl    = "private"
 }
 
-resource "aws_codepipeline" "node_app_pipeline" {
-  name     = "python-app-pipeline"
+resource "aws_codepipeline" "eks_pipeline" {
+  name     = "EKS-pipeline"
   role_arn = aws_iam_role.apps_codepipeline_role.arn
   tags = {
     Environment = var.env
@@ -335,8 +687,8 @@ resource "aws_codepipeline" "node_app_pipeline" {
       version   = "1"   # ??? 1 or 2 
       configuration = {
         ConnectionArn    = aws_codestarconnections_connection.github.arn
-        FullRepositoryId = var.python_project_repository_name
-        BranchName       = var.python_project_repository_branch
+        FullRepositoryId = var.eks_repository_name
+        BranchName       = var.eks_repository_branch
       }
 
 
@@ -350,10 +702,10 @@ resource "aws_codepipeline" "node_app_pipeline" {
 
   stage {
   
-    name = "Build-python"
+    name = "Build-EKS"
 
     action {
-       name = "Build-python"
+       name = "Build-EKS"
       category = "Build"
          run_order = 2
       # region ??
@@ -372,7 +724,7 @@ resource "aws_codepipeline" "node_app_pipeline" {
             },
             #   {
             #   name  = "PASS" >>> you can add on parameter store and use it on Buildspec.yml
-            #   - password=$(aws ssm get-parameters --region us-east-1 --names PASS --with-decryption --query Parameters[0].Value)
+            #   - password=$(aws ssm get-parameters --region us-east-2 --names PASS --with-decryption --query Parameters[0].Value)
             # - password=`echo $password | sed -e 's/^"//' -e 's/"$//'`
             #   type  = "PARAMETER_STORE"
             #   value = "ACCOUNT_ID"
@@ -380,7 +732,7 @@ resource "aws_codepipeline" "node_app_pipeline" {
  
           ]
         )
-        "ProjectName" = aws_codebuild_project.containerAppBuild.name
+        "ProjectName" = aws_codebuild_project.EKSBuild.name
       }
       input_artifacts = [
         "SourceArtifact",
@@ -398,61 +750,327 @@ resource "aws_codepipeline" "node_app_pipeline" {
 
 
 
+
+# EBS 
+
+stage {
+
+   name = "Build-EBS"
+
+    action {
+       name = "EBS-addon"
+      category = "Build"
+      run_order = 3
+      # region ??
+      configuration = {
+        "EnvironmentVariables" = jsonencode(
+          [
+            {
+              name  = "environment"
+              type  = "PLAINTEXT"
+              value = var.env
+            },
+            {
+              name  = "AWS_DEFAULT_REGION"
+              type  = "PLAINTEXT"
+              value = var.aws_region
+            }
+ 
+          ]
+        )
+        "ProjectName" = aws_codebuild_project.containerAppBuild_ebs.name
+      }
+
+      input_artifacts = [
+        "SourceArtifact",
+      ]
+     
+      output_artifacts = [
+        "BuildArtifact-4",
+      ]
+      owner     = "AWS"
+      provider  = "CodeBuild"
+  
+      version   = "1"
+    }
+
+    action {
+      name = "EBS-APP"
+      category = "Build"
+      run_order = 4
+      # region ??
+      configuration = {
+        "EnvironmentVariables" = jsonencode(
+          [
+            {
+              name  = "environment"
+              type  = "PLAINTEXT"
+              value = var.env
+            },
+            {
+              name  = "AWS_DEFAULT_REGION"
+              type  = "PLAINTEXT"
+              value = var.aws_region
+            }
+ 
+          ]
+        )
+        "ProjectName" = aws_codebuild_project.containerAppBuild_ebs_app.name
+      }
+      input_artifacts = [
+        "SourceArtifact",
+      ]
+  
+      output_artifacts = [
+        "BuildArtifact-5",
+      ]
+      owner     = "AWS"
+      provider  = "CodeBuild"
+  
+      version   = "1"
+    }
+
+
+
+  }
+
+
+
+stage {
+
+   name = "Build-IAM"
+
+    action {
+       name = "IAM-USER"
+      category = "Build"
+      run_order = 3
+      # region ??
+      configuration = {
+        "EnvironmentVariables" = jsonencode(
+          [
+            {
+              name  = "environment"
+              type  = "PLAINTEXT"
+              value = var.env
+            },
+            {
+              name  = "AWS_DEFAULT_REGION"
+              type  = "PLAINTEXT"
+              value = var.aws_region
+            }
+ 
+          ]
+        )
+        "ProjectName" = aws_codebuild_project.containerAppBuild_iam.name
+      }
+
+      input_artifacts = [
+        "SourceArtifact",
+      ]
+     
+      output_artifacts = [
+        "BuildArtifact-6",
+      ]
+      owner     = "AWS"
+      provider  = "CodeBuild"
+  
+      version   = "1"
+    }
+
+}
+
+
+
+
+stage {
+
+   name = "Build-CAS"
+
+    action {
+       name = "CAS-Deploy"
+      category = "Build"
+      run_order = 3
+      # region ??
+      configuration = {
+        "EnvironmentVariables" = jsonencode(
+          [
+            {
+              name  = "environment"
+              type  = "PLAINTEXT"
+              value = var.env
+            },
+            {
+              name  = "AWS_DEFAULT_REGION"
+              type  = "PLAINTEXT"
+              value = var.aws_region
+            }
+ 
+          ]
+        )
+        "ProjectName" = aws_codebuild_project.containerAppBuild_cas.name
+      }
+
+      input_artifacts = [
+        "SourceArtifact",
+      ]
+     
+      output_artifacts = [
+        "BuildArtifact-7",
+      ]
+      owner     = "AWS"
+      provider  = "CodeBuild"
+  
+      version   = "1"
+    }
+
+
+  }
+
+
+
+#HPA
+stage {
+
+   name = "Build-Metric"
+
+    action {
+       name = "Metrics"
+      category = "Build"
+      run_order = 3
+      # region ??
+      configuration = {
+        "EnvironmentVariables" = jsonencode(
+          [
+            {
+              name  = "environment"
+              type  = "PLAINTEXT"
+              value = var.env
+            },
+            {
+              name  = "AWS_DEFAULT_REGION"
+              type  = "PLAINTEXT"
+              value = var.aws_region
+            }
+ 
+          ]
+        )
+        "ProjectName" = aws_codebuild_project.containerAppBuild_metrics.name
+      }
+
+      input_artifacts = [
+        "SourceArtifact",
+      ]
+     
+      output_artifacts = [
+        "BuildArtifact-8",
+      ]
+      owner     = "AWS"
+      provider  = "CodeBuild"
+  
+      version   = "1"
+    }
+
+    action {
+      name = "Build-HPA"
+      category = "Build"
+      run_order = 4
+      # region ??
+      configuration = {
+        "EnvironmentVariables" = jsonencode(
+          [
+            {
+              name  = "environment"
+              type  = "PLAINTEXT"
+              value = var.env
+            },
+            {
+              name  = "AWS_DEFAULT_REGION"
+              type  = "PLAINTEXT"
+              value = var.aws_region
+            }
+ 
+          ]
+        )
+        "ProjectName" = aws_codebuild_project.containerAppBuild_hpa_app.name
+      }
+      input_artifacts = [
+        "SourceArtifact",
+      ]
+  
+      output_artifacts = [
+        "BuildArtifact-9",
+      ]
+      owner     = "AWS"
+      provider  = "CodeBuild"
+  
+      version   = "1"
+    }
+
+
+
+  }
+
+
+# Montioring and Logging
+stage {
+
+   name = "Build-Monitor"
+
+    action {
+       name = "Monitor-Deploy"
+      category = "Build"
+      run_order = 3
+      # region ??
+      configuration = {
+        "EnvironmentVariables" = jsonencode(
+          [
+            {
+              name  = "environment"
+              type  = "PLAINTEXT"
+              value = var.env
+            },
+            {
+              name  = "AWS_DEFAULT_REGION"
+              type  = "PLAINTEXT"
+              value = var.aws_region
+            }
+ 
+          ]
+        )
+        "ProjectName" = aws_codebuild_project.containerAppBuild_Monitoring.name
+      }
+
+      input_artifacts = [
+        "SourceArtifact",
+      ]
+     
+      output_artifacts = [
+        "BuildArtifact-10",
+      ]
+      owner     = "AWS"
+      provider  = "CodeBuild"
+  
+      version   = "1"
+    }
+
+
+  }
+
+}
+
+
+
 ```
 
 
 
-#### Step 05: We define Outputs `c6-outputs.tf`
-
-
-```
-output "code_build_project" {
-  value = aws_codebuild_project.containerAppBuild.arn
-}
-output "python_codepipeline_project" {
-  value = aws_codepipeline.python_pipeline.arn
-}
 
 
 
-```
+#### BuildSpec for Each Projects
 
 
 
-#### Step 06: We define Variables `c7-variables.tf`
-
-
-```
-
-variable "aws_region" {
-  description = "AWS region to launch servers."
-  default     = "us-east-1"
-}
-variable "env" {
-  description = "Targeted Depolyment environment"
-  default     = "dev"
-}
-variable "python_project_repository_name" {
-  description = "Nodejs Project Repository name to connect to"
-  default     = "yousefshaban00/pipeline01"
-}
-variable "python_project_repository_branch" {
-  description = "Nodejs Project Repository branch to connect to"
-  default     = "main"
-}
-
-
-variable "artifacts_bucket_name" {
-  description = "S3 Bucket for storing artifacts"
-  default     = "python-app"
-}
-
-
-```
-
-
-
-#### Outputs and Verify 
 
 
 
