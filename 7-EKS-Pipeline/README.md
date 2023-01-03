@@ -1167,12 +1167,13 @@ phases:
 
       ```
       
-      #### BuildSpec for some project that need to access and authenticate with EKS and use Kubectl on Terraform
+     
     
     
-    
-  ```   
+ #### BuildSpec for some project that need to access and authenticate with EKS and use Kubectl on Terraform  
 
+      ```
+      
 version: 0.2
 
 phases:
@@ -1223,8 +1224,8 @@ phases:
   post_build:
     commands:
       - echo terraform completed on `date`      
-      ```   
-  
+ 
+        ```  
       
   
       
