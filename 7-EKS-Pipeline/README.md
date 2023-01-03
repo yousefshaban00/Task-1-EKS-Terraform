@@ -2,7 +2,7 @@
 
 **we use AWS CodePipeline to make automatically test,build and deploy python app (Cluster health check) as the follwoing steps:**
 
-![Alt text](Task-1-EKS-Terraform/7-EKS-Pipeline/screencapture-us-east-2-console-aws-amazon-codesuite-codepipeline-pipelines-EKS-pipeline-view-2023-01-03-19_03_42.png)
+![Alt text](screencapture-us-east-2-console-aws-amazon-codesuite-codepipeline-pipelines-EKS-pipeline-view-2023-01-03-19_03_42.png)
 
 
 
